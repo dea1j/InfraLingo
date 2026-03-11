@@ -7,15 +7,28 @@ export class ArchitectureService {
     private static architectureRepo = AppDataSource.getRepository(Architecture);
 
     static async buildAndLocalize(prompt: string, targetLanguage: string, userId: string | null) {
+        const isPremium = userId !== null;
         
-        console.log(`Calling Gemini to design architecture for: "${prompt}"`);
-        const geminiResult = await GeminiService.generateInfrastructure(prompt);
+        if (!isPremium) {
+            const lowerPrompt = prompt.toLowerCase();
+            const blockedKeywords = ["gcp", "google cloud", "azure", "kubernetes", "k8s"];
+            
+            const hitPaywall = blockedKeywords.some(keyword => lowerPrompt.includes(keyword));
+            
+            if (hitPaywall) {
+                throw new Error("Multi-cloud deployments (GCP/Azure) and advanced orchestrators are premium features. Please sign in to unlock them.");
+            }
+        }
+
+        console.log(`Calling Gemini (Premium: ${isPremium}) for: "${prompt}"`);
         
+        const geminiResult = await GeminiService.generateInfrastructure(prompt, targetLanguage, isPremium);
+
         console.log(`Translating documentation to: ${targetLanguage}`);
         const localizedDocs = await LingoService.localizeDocs(geminiResult.docs, targetLanguage);
 
         if (userId) {
-            console.log(`💾 3. Saving to database for user: ${userId}`);
+            console.log(`Saving to database for user: ${userId}`);
             const newArchitecture = this.architectureRepo.create({
                 originalPrompt: prompt,
                 targetLanguage: targetLanguage,
@@ -34,7 +47,7 @@ export class ArchitectureService {
             nodes: geminiResult.nodes,
             edges: geminiResult.edges,
             code: geminiResult.code,
-            docs: localizedDocs
+            docs: localizedDocs 
         };
     }
 }

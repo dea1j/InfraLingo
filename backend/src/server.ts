@@ -30,14 +30,14 @@ app.get("/api/health", (req: Request, res: Response) => {
 
 AppDataSource.initialize()
     .then(() => {
-        console.log("📦 Connected to PostgreSQL database successfully.");
+        console.log("Connected to PostgreSQL database successfully.");
         
         app.listen(PORT, () => {
-            console.log(`🚀 Server is running on http://localhost:${PORT}`);
+            console.log(`Server is running on http://localhost:${PORT}`);
         });
     })
     .catch((error) => {
-        console.error("❌ Database connection failed:", error);
+        console.error("Database connection failed:", error);
         process.exit(1);
     });
 

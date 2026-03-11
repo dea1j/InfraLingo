@@ -19,8 +19,10 @@ export const generateArchitecture = async (req: Request, res: Response): Promise
         const result = await ArchitectureService.buildAndLocalize(prompt, targetLanguage, userId);
 
         res.status(200).json(result);
-    } catch (error) {
-        console.error("Generation Error:", error);
-        res.status(500).json({ error: "Failed to generate architecture." });
-    }
+    } catch (error: any) {
+            console.error("Generation Error:", error);
+            res.status(500).json({ 
+                error: error.message || "An unexpected error occurred during generation." 
+            });
+        }
 };
