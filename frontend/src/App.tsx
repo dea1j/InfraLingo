@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore } from "./store/useAppStore";
 import {
   Sparkles,
@@ -10,16 +10,19 @@ import {
   UserCircle,
   LogOut,
   Download,
+  History,
 } from "lucide-react";
 import ArchitectureCanvas from "./components/canvas/ArchitectureCanvas";
 import TerraformEditor from "./components/editor/TerraformEditor";
 import ReactMarkdown from "react-markdown";
 import AuthModal from "./components/auth/AuthModal";
+import HistorySidebar from "./components/history/HistorySidebar";
 
 export default function App() {
   const [prompt, setPrompt] = useState("");
   const [targetLanguage, setTargetLanguage] = useState("en");
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
   const {
     generateArchitecture,
     isGenerating,
@@ -28,7 +31,15 @@ export default function App() {
     user,
     logout,
     guestGenerations,
+    setIsHistoryOpen,
+    fetchHistory,
   } = useAppStore();
+
+  useEffect(() => {
+    if (user) {
+      fetchHistory();
+    }
+  }, [user, fetchHistory]);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,11 +53,14 @@ export default function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
       />
+      <HistorySidebar />
+
       {/* LEFT PANEL: Input & Documentation */}
       <div className="w-1/3 min-w-[400px] max-w-[500px] border-r border-slate-700 bg-[#1E293B] flex flex-col">
-        {/* Header */}
-        <div className="p-6 border-b border-slate-700">
-          <div className="p-6 border-b border-slate-700 flex justify-between items-center">
+        {/* Top Section: Header & Form */}
+        <div className="p-6 border-b border-slate-700 flex flex-col gap-6">
+          {/* Header */}
+          <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Box className="w-8 h-8 text-blue-500" />
               <h1 className="text-2xl font-bold text-white tracking-tight">
@@ -55,12 +69,21 @@ export default function App() {
             </div>
 
             {user ? (
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
-              >
-                <LogOut className="w-4 h-4" /> Sign Out
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsHistoryOpen(true)}
+                  className="flex items-center gap-2 text-sm bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-md border border-slate-600 transition-colors"
+                >
+                  <History className="w-4 h-4" /> My Projects
+                </button>
+                <button
+                  onClick={logout}
+                  className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
             ) : (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
@@ -118,9 +141,10 @@ export default function App() {
               </button>
             </div>
           </form>
+
           {/* Guest Generations Counter */}
           {!user && (
-            <div className="mt-4 text-center text-xs text-slate-500">
+            <div className="text-center text-xs text-slate-500">
               {guestGenerations > 0 ? (
                 `${guestGenerations} free generation${
                   guestGenerations === 1 ? "" : "s"
@@ -134,7 +158,7 @@ export default function App() {
           )}
 
           {error && (
-            <div className="mt-4 p-3 bg-red-900/50 border border-red-700 text-red-200 rounded-lg text-sm">
+            <div className="p-3 bg-red-900/50 border border-red-700 text-red-200 rounded-lg text-sm">
               {error}
             </div>
           )}
@@ -200,7 +224,6 @@ export default function App() {
             <Code2 className="w-4 h-4" /> main.tf
           </div>
 
-          {/* BAM! The VS Code Editor goes here */}
           <TerraformEditor />
         </div>
       </div>
