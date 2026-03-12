@@ -1,7 +1,5 @@
 @import "tailwindcss";
-@plugin "@tailwindcss/typography";
 
-/* A tiny custom scrollbar to keep things looking native and clean */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

@@ -17,16 +17,23 @@ export class GeminiService {
         };
         const languageName = languageMap[targetLanguage] || "English";
 
-        // Calm, clear instructions for normal formatting
+        // AGGRESSIVELY STRICT INSTRUCTIONS
         const docsInstruction = studyMode 
-            ? `"docs": "A detailed, educational Study Guide explaining the architecture. Use standard Markdown headings (##) and bullet points. Break down the core concepts and explain WHY these specific components were chosen. Write in normal sentence case."`
-            : `"docs": "A standard, professional Markdown string explaining the architecture and security warnings. Use normal sentence case and standard Markdown headings."`;
+            ? `"docs": "A detailed Study Guide explaining the architecture. CRITICAL: You MUST use proper Markdown spacing (e.g., '## Title' not '##Title') so it translates correctly. Break down core concepts."`
+            : `"docs": "A SHORT, basic summary. CRITICAL: You MUST use proper Markdown spacing (e.g., '## Overview'). DO NOT write a study guide. DO NOT write deep explanations. Keep it extremely brief."`;
 
-        // NEW: Explicitly force the language onto the initial quiz generation!
+        // Bulletproof quiz instructions forcing exact string matches and full translation
         const quizInstruction = studyMode
-            ? `"quiz": [ { "question": "Write a specific question...", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "explanation": "Why this is correct" } ] (CRITICAL: GENERATE EXACTLY 3 UNIQUE QUESTIONS HERE. ALL QUIZ TEXT MUST BE IN ${languageName.toUpperCase()})`
-            : `"quiz": []`;
-
+            ? `"quiz": [ 
+                { 
+                    "question": "Write the specific question here in ${languageName}", 
+                    "options": ["Option 1 in ${languageName}", "Option 2 in ${languageName}", "Option 3 in ${languageName}", "Option 4 in ${languageName}"], 
+                    "correctAnswer": "MUST EXACTLY MATCH THE FULL TEXT OF THE CORRECT OPTION", 
+                    "explanation": "Explanation of why it is correct in ${languageName}" 
+                } 
+              ] (CRITICAL RULES: 1. Generate EXACTLY 3 unique questions. 2. ALL TEXT MUST BE IN ${languageName.toUpperCase()}. 3. The 'correctAnswer' MUST be the exact full string from the options array, DO NOT use a letter like 'A' or 'B'.)`
+            : `"quiz": [] (CRITICAL: YOU MUST RETURN AN EMPTY ARRAY. DO NOT GENERATE ANY QUESTIONS. STUDY MODE IS DISABLED.)`;
+            
         const systemInstruction = `
         You are an elite Cloud Solutions Architect. Convert the user's natural language request into a valid cloud infrastructure design.
         

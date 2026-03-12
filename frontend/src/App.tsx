@@ -113,7 +113,7 @@ export default function App() {
       <HistorySidebar />
 
       {/* LEFT PANEL: Input & Documentation */}
-      <div className="w-1/3 min-w-[400px] max-w-[500px] border-r border-slate-700 bg-[#1E293B] flex flex-col z-20 relative shadow-xl">
+      <div className="w-1/3 min-w-100 max-w-125 border-r border-slate-700 bg-[#1E293B] flex flex-col z-20 relative shadow-xl">
         {/* Top Section: Header & Form */}
         <div className="p-6 border-b border-slate-700 flex flex-col transition-all duration-300">
           <div className="flex justify-between items-center mb-2">
@@ -465,7 +465,7 @@ export default function App() {
         </div>
 
         {/* Bottom Half: Terraform Code */}
-        <div className="h-1/3 min-h-[250px] relative bg-[#1E1E1E]">
+        <div className="h-1/3 min-h-62.5 relative bg-[#1E1E1E]">
           <div className="absolute top-4 right-4 z-10 bg-slate-800/80 backdrop-blur px-3 py-1.5 rounded-md border border-slate-700 flex items-center gap-2 text-sm text-slate-300">
             <Code2 className="w-4 h-4" /> main.tf
           </div>
