@@ -6,23 +6,20 @@ import { LingoService } from "./lingo.service";
 export class ArchitectureService {
     private static architectureRepo = AppDataSource.getRepository(Architecture);
 
-    static async buildAndLocalize(prompt: string, targetLanguage: string, userId: string | null) {
+    static async buildAndLocalize(prompt: string, targetLanguage: string, userId: string | null, studyMode: boolean) {
         const isPremium = userId !== null;
         
         if (!isPremium) {
             const lowerPrompt = prompt.toLowerCase();
             const blockedKeywords = ["gcp", "google cloud", "azure", "kubernetes", "k8s"];
-            
-            const hitPaywall = blockedKeywords.some(keyword => lowerPrompt.includes(keyword));
-            
-            if (hitPaywall) {
+            if (blockedKeywords.some(keyword => lowerPrompt.includes(keyword))) {
                 throw new Error("Multi-cloud deployments (GCP/Azure) and advanced orchestrators are premium features. Please sign in to unlock them.");
             }
         }
 
-        console.log(`Calling Gemini (Premium: ${isPremium}) for: "${prompt}"`);
+        console.log(`Calling Gemini (Premium: ${isPremium}, Study Mode: ${studyMode}) for: "${prompt}"`);
         
-        const geminiResult = await GeminiService.generateInfrastructure(prompt, targetLanguage, isPremium);
+        const geminiResult = await GeminiService.generateInfrastructure(prompt, targetLanguage, isPremium, studyMode);
 
         console.log(`Translating documentation to: ${targetLanguage}`);
         const localizedDocs = await LingoService.localizeDocs(geminiResult.docs, targetLanguage);
@@ -47,7 +44,10 @@ export class ArchitectureService {
             nodes: geminiResult.nodes,
             edges: geminiResult.edges,
             code: geminiResult.code,
-            docs: localizedDocs 
+            docs: localizedDocs,
+            estimatedCost: geminiResult.estimatedCost,
+            costBreakdown: geminiResult.costBreakdown,
+            quiz: geminiResult.quiz
         };
     }
 }

@@ -21,15 +21,34 @@ export interface HistoryItem {
   createdAt: string;
 }
 
+export interface CostBreakdownItem {
+  component: string;
+  cost: string;
+}
+
+export interface QuizQuestion {
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  explanation: string;
+}
+
 interface AppState {
   // --- Architecture State ---
   nodes: Node[];
   edges: Edge[];
   terraformCode: string;
   localizedDocs: string;
+  estimatedCost: string | null;
+  costBreakdown: CostBreakdownItem[];
+  quiz: QuizQuestion[];
   isGenerating: boolean;
   error: string | null;
   
+  // --- Additional Quiz State ---
+  isGeneratingMore: boolean;
+  generateMoreQuestions: (targetLanguage: string) => Promise<void>;
+
   // --- Auth State ---
   user: User | null;
   token: string | null;
@@ -42,7 +61,7 @@ interface AppState {
   isHistoryOpen: boolean;
   
   // --- Actions ---
-  generateArchitecture: (prompt: string, targetLanguage: string) => Promise<void>;
+  generateArchitecture: (prompt: string, targetLanguage: string, studyMode: boolean) => Promise<void>;
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
   
@@ -72,8 +91,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   edges: [],
   terraformCode: '// Your Terraform code will appear here...',
   localizedDocs: '# Architecture Documentation\n\nGenerated docs will appear here.',
+  estimatedCost: null,
+  costBreakdown: [],
+  quiz: [],
   isGenerating: false,
   error: null,
+  isGeneratingMore: false,
 
   user: savedUser ? JSON.parse(savedUser) : null,
   token: savedToken || null,
@@ -85,7 +108,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isHistoryOpen: false,
 
   // --- ARCHITECTURE ACTIONS ---
-  generateArchitecture: async (prompt: string, targetLanguage: string) => {
+  generateArchitecture: async (prompt: string, targetLanguage: string, studyMode: boolean) => {
     const { token, guestGenerations, user } = get();
 
     if (!user && guestGenerations <= 0) {
@@ -93,19 +116,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       return;
     }
 
-    set({ isGenerating: true, error: null });
+    set({ isGenerating: true, error: null, quiz: [] }); 
     
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       const response = await axios.post('http://localhost:5000/api/generate', 
-        { prompt, targetLanguage },
+        { prompt, targetLanguage, studyMode },
         { headers }
       );
 
-      const { nodes, edges, code, docs } = response.data;
+      const { nodes, edges, code, docs, estimatedCost, costBreakdown, quiz } = response.data;
 
-      // CLEANUP: Fix escaped newlines and quotes from the AI JSON hallucination
       const formattedCode = code.replace(/\\n/g, '\n').replace(/\\"/g, '"');
 
       if (!user) {
@@ -117,12 +139,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ 
         nodes: nodes, 
         edges: edges, 
-        terraformCode: formattedCode, // Use the beautifully formatted code!
+        terraformCode: formattedCode,
         localizedDocs: docs,
+        estimatedCost: estimatedCost || null,
+        costBreakdown: costBreakdown || [],
+        quiz: quiz || [], 
         isGenerating: false 
       });
 
-      // If logged in, refresh history to show the newly generated architecture
       if (user) {
         get().fetchHistory();
       }
@@ -136,6 +160,31 @@ export const useAppStore = create<AppState>((set, get) => ({
       } else {
         set({ error: "An unexpected error occurred.", isGenerating: false });
       }
+    }
+  },
+
+  generateMoreQuestions: async (targetLanguage: string) => { // <-- ACCEPT IT HERE
+    const { terraformCode, quiz, token } = get(); // <-- REMOVED IT FROM HERE
+    if (!terraformCode || terraformCode.includes('Your Terraform code will appear here')) return;
+
+    set({ isGeneratingMore: true, error: null });
+    
+    try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      
+      const response = await axios.post('http://localhost:5000/api/generate/quiz', { 
+        code: terraformCode, 
+        targetLanguage, // Now it uses the passed parameter!
+        existingQuestions: quiz.map(q => q.question) 
+      }, { headers });
+
+      set({ 
+        quiz: [...quiz, ...(response.data.quiz || [])], 
+        isGeneratingMore: false 
+      });
+    } catch (error) {
+      console.error("Quiz Generation Error:", error);
+      set({ error: "Failed to generate more questions. Check your connection or quota.", isGeneratingMore: false });
     }
   },
 
@@ -165,6 +214,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       edges: item.edgesJson,
       terraformCode: item.terraformCode,
       localizedDocs: item.readmeLocalized,
+      estimatedCost: null, 
+      costBreakdown: [],
+      quiz: [], 
       isHistoryOpen: false 
     });
   },
@@ -175,13 +227,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const response = await axios.post('http://localhost:5000/api/auth/login', { email, password });
       const { token, user } = response.data;
-      
       localStorage.setItem('infralingo_token', token);
       localStorage.setItem('infralingo_user', JSON.stringify(user));
-      
       set({ token, user, isAuthenticating: false });
-      
-      // Automatically fetch user's saved projects upon login
       get().fetchHistory();
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -195,13 +243,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const response = await axios.post('http://localhost:5000/api/auth/register', { email, password });
       const { token, user } = response.data;
-      
       localStorage.setItem('infralingo_token', token);
       localStorage.setItem('infralingo_user', JSON.stringify(user));
-      
       set({ token, user, isAuthenticating: false });
-
-      // Automatically fetch user's saved projects upon registration
       get().fetchHistory();
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -213,6 +257,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   logout: () => {
     localStorage.removeItem('infralingo_token');
     localStorage.removeItem('infralingo_user');
-    set({ token: null, user: null, history: [] }); // Clear history on logout
+    set({ token: null, user: null, history: [] });
   }
 }));
