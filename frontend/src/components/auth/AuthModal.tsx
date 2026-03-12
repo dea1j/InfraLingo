@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, Cloud, History, Download, Github, Mail } from "lucide-react";
-import { useAppStore } from "../../store/useAppStore"; // We will update this next!
+import { useAppStore } from "../../store/useAppStore";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -12,7 +12,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // We will add these to Zustand in the next step
   const { login, register, authError, isAuthenticating } = useAppStore();
 
   if (!isOpen) return null;
@@ -24,10 +23,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     } else {
       await register(email, password);
     }
-    // If successful, the store will update and we can close the modal
+
     if (!useAppStore.getState().authError) {
       onClose();
     }
+  };
+
+  const handleGithubLogin = () => {
+    window.location.href = "http://localhost:5000/api/auth/github";
   };
 
   return (
@@ -41,7 +44,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           <X className="w-6 h-6" />
         </button>
 
-        {/* LEFT SIDE: The Pitch (Why Sign Up?) */}
+        {/* LEFT SIDE: The Pitch */}
         <div className="bg-slate-800 p-8 md:w-5/12 border-r border-slate-700 flex flex-col justify-center">
           <h2 className="text-2xl font-bold text-white mb-2">
             Upgrade Your Stack
@@ -165,9 +168,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <div className="flex-1 h-px bg-slate-700"></div>
           </div>
 
+          {/* NEW: Live GitHub Auth Button */}
           <button
             type="button"
-            onClick={() => alert("GitHub OAuth coming soon in v2!")}
+            onClick={handleGithubLogin}
             className="mt-6 w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-medium p-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors"
           >
             <Github className="w-5 h-5" />

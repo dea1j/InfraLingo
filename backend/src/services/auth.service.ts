@@ -34,4 +34,19 @@ export class AuthService {
         const token = jwt.sign({ id: user.id }, jwtSecret as string, { expiresIn: "7d" });
         return { token, user: { id: user.id, email: user.email } };
     }
+
+    static async handleGithubAuth(email: string) {
+        let user = await this.userRepository.findOneBy({ email });
+
+        if (!user) {
+            const randomDummyPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+            const passwordHash = await bcrypt.hash(randomDummyPassword, 10);
+            
+            user = this.userRepository.create({ email, passwordHash });
+            await this.userRepository.save(user);
+        }
+
+        const token = jwt.sign({ id: user.id }, jwtSecret as string, { expiresIn: "7d" });
+        return { token, user: { id: user.id, email: user.email } };
+    }
 }

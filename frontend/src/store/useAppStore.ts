@@ -2,9 +2,6 @@ import { create } from 'zustand';
 import axios from 'axios';
 import type { Node, Edge } from '@xyflow/react';
 
-// ==========================================
-// 1. INTERFACES
-// ==========================================
 interface User {
   id: string;
   email: string;
@@ -34,7 +31,7 @@ export interface QuizQuestion {
 }
 
 interface AppState {
-  // --- Architecture State ---
+  // Architecture State
   nodes: Node[];
   edges: Edge[];
   terraformCode: string;
@@ -45,22 +42,22 @@ interface AppState {
   isGenerating: boolean;
   error: string | null;
   
-  // --- Additional Quiz State ---
+  // Additional Quiz State
   isGeneratingMore: boolean;
   generateMoreQuestions: (targetLanguage: string) => Promise<void>;
 
-  // --- Auth State ---
+  // Auth State
   user: User | null;
   token: string | null;
   isAuthenticating: boolean;
   authError: string | null;
   guestGenerations: number;
   
-  // --- History State ---
+  // History State
   history: HistoryItem[];
   isHistoryOpen: boolean;
   
-  // --- Actions ---
+  // Actions
   generateArchitecture: (prompt: string, targetLanguage: string, studyMode: boolean) => Promise<void>;
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
@@ -74,19 +71,11 @@ interface AppState {
   logout: () => void;
 }
 
-// ==========================================
-// 2. LOCAL STORAGE INITIALIZATION
-// ==========================================
 const savedToken = localStorage.getItem('infralingo_token');
 const savedUser = localStorage.getItem('infralingo_user');
 const savedGuestGenerations = localStorage.getItem('infralingo_guest_count');
 
-// ==========================================
-// 3. ZUSTAND STORE
-// ==========================================
-export const useAppStore = create<AppState>((set, get) => ({
-  
-  // --- INITIAL STATE ---
+export const useAppStore = create<AppState>((set, get) => ({  
   nodes: [],
   edges: [],
   terraformCode: '// Your Terraform code will appear here...',
@@ -107,7 +96,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   history: [],
   isHistoryOpen: false,
 
-  // --- ARCHITECTURE ACTIONS ---
+  // ARCHITECTURE ACTIONS
   generateArchitecture: async (prompt: string, targetLanguage: string, studyMode: boolean) => {
     const { token, guestGenerations, user } = get();
 
@@ -163,8 +152,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  generateMoreQuestions: async (targetLanguage: string) => { // <-- ACCEPT IT HERE
-    const { terraformCode, quiz, token } = get(); // <-- REMOVED IT FROM HERE
+  generateMoreQuestions: async (targetLanguage: string) => {
+    const { terraformCode, quiz, token } = get();
     if (!terraformCode || terraformCode.includes('Your Terraform code will appear here')) return;
 
     set({ isGeneratingMore: true, error: null });
@@ -174,7 +163,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       
       const response = await axios.post('http://localhost:5000/api/generate/quiz', { 
         code: terraformCode, 
-        targetLanguage, // Now it uses the passed parameter!
+        targetLanguage,
         existingQuestions: quiz.map(q => q.question) 
       }, { headers });
 
@@ -191,7 +180,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
 
-  // --- HISTORY ACTIONS ---
+  // HISTORY ACTIONS
   setIsHistoryOpen: (isOpen) => set({ isHistoryOpen: isOpen }),
 
   fetchHistory: async () => {
@@ -221,7 +210,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
   },
 
-  // --- AUTH ACTIONS ---
+  // AUTH ACTIONS
   login: async (email, password) => {
     set({ isAuthenticating: true, authError: null });
     try {

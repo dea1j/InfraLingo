@@ -31,7 +31,6 @@ export const generateQuiz = async (req: Request, res: Response) => {
             return res.status(400).json({ error: "Terraform code is required to generate a quiz." });
         }
 
-        // Call the new Gemini method directly
         const result = await GeminiService.generateMoreQuestions(code, targetLanguage || "en", existingQuestions);
 
         res.status(200).json(result);

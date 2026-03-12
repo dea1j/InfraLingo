@@ -32,7 +32,7 @@ export default function App() {
   const [targetLanguage, setTargetLanguage] = useState("en");
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [studyMode, setStudyMode] = useState(false);
-  const [isFormExpanded, setIsFormExpanded] = useState(true); // Controls form visibility
+  const [isFormExpanded, setIsFormExpanded] = useState(true);
 
   // Quiz Interaction State
   const [selectedAnswers, setSelectedAnswers] = useState<
@@ -63,6 +63,28 @@ export default function App() {
     if (user) {
       fetchHistory();
     }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const githubToken = urlParams.get("token");
+    const githubEmail = urlParams.get("email");
+    const githubId = urlParams.get("id");
+
+    if (githubToken && githubEmail && githubId) {
+      localStorage.setItem("infralingo_token", githubToken);
+      localStorage.setItem(
+        "infralingo_user",
+        JSON.stringify({ id: githubId, email: githubEmail })
+      );
+
+      useAppStore.setState({
+        token: githubToken,
+        user: { id: githubId, email: githubEmail },
+      });
+
+      fetchHistory();
+
+      window.history.replaceState({}, document.title, "/");
+    }
   }, [user, fetchHistory]);
 
   const handleGenerate = async (e: React.FormEvent) => {
@@ -71,7 +93,6 @@ export default function App() {
     setSelectedAnswers({});
     setShowExplanations({});
     await generateArchitecture(prompt, targetLanguage, studyMode);
-    // Optionally auto-collapse the form after generating for a cleaner view
     setIsFormExpanded(false);
   };
 

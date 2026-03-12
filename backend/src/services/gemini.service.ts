@@ -11,18 +11,15 @@ export class GeminiService {
             }
         });
 
-        // Map the code to the actual language name
         const languageMap: Record<string, string> = {
             en: "English", es: "Spanish", fr: "French", de: "German", pt: "Portuguese", ja: "Japanese"
         };
         const languageName = languageMap[targetLanguage] || "English";
 
-        // AGGRESSIVELY STRICT INSTRUCTIONS
         const docsInstruction = studyMode 
             ? `"docs": "A detailed Study Guide explaining the architecture. CRITICAL: You MUST use proper Markdown spacing (e.g., '## Title' not '##Title') so it translates correctly. Break down core concepts."`
             : `"docs": "A SHORT, basic summary. CRITICAL: You MUST use proper Markdown spacing (e.g., '## Overview'). DO NOT write a study guide. DO NOT write deep explanations. Keep it extremely brief."`;
 
-        // Bulletproof quiz instructions forcing exact string matches and full translation
         const quizInstruction = studyMode
             ? `"quiz": [ 
                 { 
@@ -83,7 +80,6 @@ export class GeminiService {
             }
         });
 
-        // Tell the AI to output in the user's selected language
         const languageMap: Record<string, string> = {
             en: "English", es: "Spanish", fr: "French", de: "German", pt: "Portuguese", ja: "Japanese"
         };
