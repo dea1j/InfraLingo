@@ -15,6 +15,7 @@ export interface HistoryItem {
   edgesJson: Edge[];
   terraformCode: string;
   readmeLocalized: string;
+  quizJson?: QuizQuestion[];
   createdAt: string;
 }
 
@@ -262,7 +263,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       localizedDocs: item.readmeLocalized,
       estimatedCost: null, 
       costBreakdown: [],
-      quiz: [], 
+      quiz: item.quizJson || [], 
       isHistoryOpen: false 
     });
   },

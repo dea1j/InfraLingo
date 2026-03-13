@@ -33,6 +33,7 @@ export class ArchitectureService {
                 edgesJson: geminiResult.edges,
                 terraformCode: geminiResult.code,
                 readmeLocalized: localizedDocs,
+                quizJson: geminiResult.quiz,
                 user: { id: userId }
             });
             await this.architectureRepo.save(newArchitecture);

@@ -335,7 +335,8 @@ export default function App() {
             <div className="flex gap-2">
               <button
                 onClick={() => {
-                  const blob = new Blob([localizedDocs], {
+                  const frontmatter = `# InfraLingo Architecture Export\n*Generated on ${new Date().toLocaleDateString()}*\n\n---\n\n`;
+                  const blob = new Blob([frontmatter + localizedDocs], {
                     type: "text/markdown;charset=utf-8",
                   });
                   const url = URL.createObjectURL(blob);

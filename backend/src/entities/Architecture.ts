@@ -24,6 +24,9 @@ export class Architecture {
     @Column("text")
     readmeLocalized!: string;
 
+    @Column("jsonb", { nullable: true })
+    quizJson!: any;
+
     @CreateDateColumn()
     createdAt!: Date;
 

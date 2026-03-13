@@ -207,7 +207,7 @@ export class GeminiService {
         
         CRITICAL RULES:
         1. DO NOT repeat any of the 'Existing Questions' provided by the user.
-        2. All text (questions, options, explanations) MUST be written in ${languageName}.
+        2. All text (questions, options, explanations) MUST be written in ENGLISH.
         3. Return a strictly valid JSON object. Do not include Markdown wrappers like \`\`\`json.
 
         The JSON object must EXACTLY match this structure:
@@ -241,7 +241,14 @@ export class GeminiService {
                 .replace(/\n?```$/g, "")
                 .trim();
 
-            return JSON.parse(cleanJsonString);
+            const parsedData = JSON.parse(cleanJsonString);
+            
+            if (targetLanguage !== "en" && parsedData.quiz && parsedData.quiz.length > 0) {
+                const translatedQuiz = await translateQuiz(parsedData.quiz, targetLanguage, languageName);
+                parsedData.quiz = translatedQuiz;
+            }
+
+            return parsedData;
         } catch (error) {
             console.error("Gemini Quiz Generation Error:", error);
             throw new Error("Failed to generate additional questions.");
