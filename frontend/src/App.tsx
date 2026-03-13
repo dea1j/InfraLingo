@@ -95,7 +95,11 @@ export default function App() {
     setSelectedAnswers({});
     setShowExplanations({});
     await generateArchitecture(prompt, targetLanguage, studyMode);
-    setIsFormExpanded(false);
+
+    const currentNodes = useAppStore.getState().nodes;
+    if (currentNodes.length > 1) {
+      setIsFormExpanded(false);
+    }
   };
 
   const handleAnswerSelect = (questionIndex: number, option: string) => {
@@ -133,28 +137,33 @@ export default function App() {
       <HistorySidebar />
 
       {/* LEFT PANEL: Input & Documentation */}
-      <div className="w-1/3 min-w-100 max-w-125 border-r border-slate-700 bg-[#1E293B] flex flex-col z-20 relative shadow-xl">
+      <div className="w-1/3 min-w-[400px] max-w-[500px] border-r border-slate-700 bg-[#1E293B] flex flex-col z-20 relative shadow-xl">
         {/* Top Section: Header & Form */}
-        <div className="p-6 border-b border-slate-700 flex flex-col transition-all duration-300">
-          <div className="flex justify-between items-center mb-2">
+        <div className="p-5 border-b border-slate-700 flex flex-col transition-all duration-300">
+          {/* UPDATED HEADER: Flex-wrap allows buttons to drop down safely instead of floating off-screen */}
+          <div className="flex flex-wrap justify-between items-center mb-2 gap-y-3 gap-x-2">
             <div className="flex items-center gap-2">
-              <Box className="w-8 h-8 text-blue-500" />
-              <h1 className="text-2xl font-bold text-white tracking-tight">
+              <Box className="w-7 h-7 text-blue-500" />
+              <h1 className="text-xl font-bold text-white tracking-tight">
                 InfraLingo
               </h1>
             </div>
 
-            <div className="flex items-center gap-3">
-              {/* Form Toggle Button */}
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsFormExpanded(!isFormExpanded)}
-                className="flex items-center gap-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1.5 rounded-md border border-slate-600 transition-colors"
-                title="Toggle Form"
+                className="flex items-center gap-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1.5 rounded-md border border-slate-600 transition-colors"
+                title="Toggle Prompt Form"
               >
                 {isFormExpanded ? (
-                  <ChevronUp className="w-4 h-4" />
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5" /> <span>Hide</span>
+                  </>
                 ) : (
-                  <ChevronDown className="w-4 h-4" />
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5" />{" "}
+                    <span className="text-blue-400">Show</span>
+                  </>
                 )}
               </button>
 
@@ -162,81 +171,72 @@ export default function App() {
                 <>
                   <button
                     onClick={() => setIsHistoryOpen(true)}
-                    className="flex items-center gap-2 text-sm bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-md border border-slate-600 transition-colors"
+                    className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1.5 rounded-md border border-slate-600 transition-colors"
                   >
-                    <History className="w-4 h-4" /> My Projects
+                    <History className="w-3.5 h-3.5" /> Projects
                   </button>
                   <button
                     onClick={logout}
-                    className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+                    className="flex items-center justify-center bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-md p-1.5 text-slate-400 hover:text-white transition-colors"
                     title="Sign Out"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-3.5 h-3.5" />
                   </button>
                 </>
               ) : (
                 <button
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="flex items-center gap-2 text-sm bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-full border border-slate-600 transition-colors"
+                  className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-full border border-slate-600 transition-colors"
                 >
-                  <UserCircle className="w-4 h-4" /> Sign In
+                  <UserCircle className="w-3.5 h-3.5" /> Sign In
                 </button>
               )}
             </div>
           </div>
 
           {/* COLLAPSIBLE FORM WRAPPER */}
-          {isFormExpanded && (
-            <div className="flex flex-col gap-4 mt-4 animate-in slide-in-from-top-2 fade-in duration-200">
+          {isFormExpanded ? (
+            <div className="flex flex-col gap-4 mt-3 animate-in slide-in-from-top-2 fade-in duration-200">
               <form onSubmit={handleGenerate} className="flex flex-col gap-4">
                 <div>
-                  <label className="text-sm font-medium text-slate-400 mb-1 block">
-                    Architecture Request
-                  </label>
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     placeholder="e.g. A highly available AWS VPC with public and private subnets..."
-                    className="w-full h-32 p-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full h-28 p-3 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   />
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex gap-3">
                   <div className="flex-1">
-                    <label className="text-sm font-medium text-slate-400 mb-1 flex items-center gap-1">
-                      <Globe className="w-4 h-4" /> Docs Language
+                    <label className="text-xs font-medium text-slate-400 mb-1 flex items-center gap-1">
+                      <Globe className="w-3.5 h-3.5" /> Docs Language
                     </label>
                     <div className="flex gap-2">
                       <select
                         value={targetLanguage}
                         onChange={(e) => setTargetLanguage(e.target.value)}
-                        className="flex-1 p-2.5 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 p-2 bg-slate-800 border border-slate-600 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="en">English (Default)</option>
-                        <optgroup label="Europe">
-                          <option value="es">Spanish</option>
-                          <option value="fr">French</option>
-                          <option value="de">German</option>
-                          <option value="it">Italian</option>
-                          <option value="pt">Portuguese</option>
-                          <option value="nl">Dutch</option>
-                          <option value="ru">Russian</option>
-                          <option value="uk">Ukrainian</option>
-                        </optgroup>
-                        <optgroup label="Asia & Middle East">
-                          <option value="ja">Japanese</option>
-                          <option value="zh">Chinese (Simplified)</option>
-                          <option value="ko">Korean</option>
-                          <option value="hi">Hindi</option>
-                          <option value="ar">Arabic</option>
-                          <option value="vi">Vietnamese</option>
-                          <option value="tr">Turkish</option>
-                          <option value="he">Hebrew</option>
-                        </optgroup>
-                        <optgroup label="Africa & Others">
-                          <option value="sw">Swahili</option>
-                          <option value="id">Indonesian</option>
-                        </optgroup>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="nl">Dutch</option>
+                        <option value="ru">Russian</option>
+                        <option value="uk">Ukrainian</option>
+                        <option value="ja">Japanese</option>
+                        <option value="zh">Chinese (Simplified)</option>
+                        <option value="ko">Korean</option>
+                        <option value="hi">Hindi</option>
+                        <option value="ar">Arabic</option>
+                        <option value="vi">Vietnamese</option>
+                        <option value="tr">Turkish</option>
+                        <option value="he">Hebrew</option>
+                        <option value="sw">Swahili</option>
+                        <option value="id">Indonesian</option>
                       </select>
 
                       <button
@@ -255,13 +255,13 @@ export default function App() {
                             "Generated docs will appear here"
                           )
                         }
-                        className="flex items-center justify-center px-3 bg-purple-600/20 text-purple-400 border border-purple-500/50 rounded-lg hover:bg-purple-600/40 transition-colors disabled:opacity-50"
+                        className="flex items-center justify-center px-2.5 bg-purple-600/20 text-purple-400 border border-purple-500/50 rounded-lg hover:bg-purple-600/40 transition-colors disabled:opacity-50"
                         title="Premium: Translate Docs On-the-Fly"
                       >
                         {isTranslating ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
-                          <Languages className="w-5 h-5" />
+                          <Languages className="w-4 h-4" />
                         )}
                       </button>
                     </div>
@@ -269,17 +269,16 @@ export default function App() {
 
                   {/* Study Mode Toggle */}
                   <div className="flex-1">
-                    <label className="text-sm font-medium text-slate-400 mb-1 flex items-center gap-1">
-                      <GraduationCap className="w-4 h-4" /> Study Mode
+                    <label className="text-xs font-medium text-slate-400 mb-1 flex items-center gap-1">
+                      <GraduationCap className="w-3.5 h-3.5" /> Study Mode
                     </label>
                     <button
                       type="button"
                       onClick={() => setStudyMode(!studyMode)}
-                      className={`w-full p-2.5 rounded-lg border font-medium focus:outline-none transition-colors flex items-center justify-center gap-2 ${
-                        studyMode
+                      className={`w-full p-2 text-sm rounded-lg border font-medium focus:outline-none transition-colors flex items-center justify-center gap-2 ${studyMode
                           ? "bg-purple-900/50 border-purple-500 text-purple-300"
                           : "bg-slate-800 border-slate-600 text-slate-400 hover:bg-slate-700"
-                      }`}
+                        }`}
                     >
                       {studyMode ? "Enabled" : "Disabled"}
                     </button>
@@ -289,12 +288,12 @@ export default function App() {
                 <button
                   type="submit"
                   disabled={isGenerating || !prompt.trim()}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-400 text-white font-medium p-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-slate-400 text-white font-medium p-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm"
                 >
                   {isGenerating ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Sparkles className="w-5 h-5" />
+                    <Sparkles className="w-4 h-4" />
                   )}
                   {isGenerating ? "Designing..." : "Generate"}
                 </button>
@@ -303,8 +302,7 @@ export default function App() {
               {!user && (
                 <div className="text-center text-xs text-slate-500">
                   {guestGenerations > 0 ? (
-                    `${guestGenerations} free generation${
-                      guestGenerations === 1 ? "" : "s"
+                    `${guestGenerations} free generation${guestGenerations === 1 ? "" : "s"
                     } remaining.`
                   ) : (
                     <span className="text-red-400">
@@ -320,12 +318,23 @@ export default function App() {
                 </div>
               )}
             </div>
+          ) : (
+            /* UPDATED SLEEK COLLAPSED BUTTON: Maximizes screen space for documentation */
+            <div className="mt-3 animate-in fade-in duration-200">
+              <button
+                onClick={() => setIsFormExpanded(true)}
+                className="w-full py-2.5 border border-dashed border-slate-600 rounded-lg text-slate-400 hover:text-white hover:border-blue-500 hover:bg-slate-800/40 transition-all flex items-center justify-center gap-2 text-sm font-medium group"
+              >
+                <Plus className="w-4 h-4 text-blue-400 group-hover:text-blue-300" />
+                <span>Write New Prompt</span>
+              </button>
+            </div>
           )}
         </div>
 
         {/* Documentation & Quiz Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between p-6 pb-2">
+          <div className="flex items-center justify-between p-5 pb-2">
             <div className="flex items-center gap-2 text-slate-400">
               <FileText className="w-5 h-5" />
               <h2 className="font-semibold text-white">Documentation</h2>
@@ -350,7 +359,7 @@ export default function App() {
                   !localizedDocs ||
                   localizedDocs.includes("Generated docs will appear here")
                 }
-                className="flex items-center gap-2 text-xs bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 px-3 py-1.5 rounded-md border border-slate-600 transition-colors"
+                className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 px-2.5 py-1.5 rounded-md border border-slate-600 transition-colors"
               >
                 <Download className="w-3.5 h-3.5" /> .md
               </button>
@@ -360,20 +369,20 @@ export default function App() {
                   !localizedDocs ||
                   localizedDocs.includes("Generated docs will appear here")
                 }
-                className="flex items-center gap-2 text-xs bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 px-3 py-1.5 rounded-md border border-slate-600 transition-colors"
+                className="flex items-center gap-1.5 text-xs bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 px-2.5 py-1.5 rounded-md border border-slate-600 transition-colors"
               >
                 <FileDown className="w-3.5 h-3.5" /> PDF
               </button>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 pb-6 scrollbar-thin scrollbar-thumb-slate-600">
+          <div className="flex-1 overflow-y-auto px-5 pb-6 scrollbar-thin scrollbar-thumb-slate-600">
             <div
               id="architecture-docs-content"
               className="prose prose-invert max-w-none 
                          prose-p:text-slate-300 prose-p:leading-relaxed 
                          prose-headings:text-indigo-400 prose-headings:font-bold prose-headings:tracking-tight
-                         prose-h1:text-2xl prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:border-b prose-h2:border-slate-700 prose-h2:pb-2
+                         prose-h1:text-2xl prose-h2:text-xl prose-h2:mt-6 prose-h2:mb-3 prose-h2:border-b prose-h2:border-slate-700 prose-h2:pb-2
                          prose-h3:text-lg prose-h3:text-purple-400
                          prose-strong:text-emerald-400 prose-strong:font-semibold
                          prose-ul:list-disc prose-ul:pl-5 
@@ -388,15 +397,15 @@ export default function App() {
 
             {/* Interactive Quiz Area */}
             {quiz && quiz.length > 0 && (
-              <div className="mt-10 pt-8 border-t border-slate-700">
-                <div className="flex items-center gap-2 mb-6 text-purple-400">
-                  <GraduationCap className="w-6 h-6" />
+              <div className="mt-8 pt-6 border-t border-slate-700">
+                <div className="flex items-center gap-2 mb-5 text-purple-400">
+                  <GraduationCap className="w-5 h-5" />
                   <h3 className="text-lg font-bold text-white">
                     Knowledge Check
                   </h3>
                 </div>
 
-                <div className="space-y-8">
+                <div className="space-y-6">
                   {quiz.map((q, i) => {
                     const isAnswered = showExplanations[i];
                     const selected = selectedAnswers[i];
@@ -405,15 +414,15 @@ export default function App() {
                     return (
                       <div
                         key={i}
-                        className="bg-slate-800/50 p-5 rounded-xl border border-slate-700"
+                        className="bg-slate-800/50 p-4 rounded-xl border border-slate-700"
                       >
-                        <p className="font-medium text-slate-200 mb-4">
+                        <p className="font-medium text-slate-200 mb-3 text-sm">
                           {i + 1}. {q.question}
                         </p>
                         <div className="space-y-2">
                           {q.options.map((opt, optIdx) => {
                             let btnClass =
-                              "w-full text-left p-3 rounded-lg border text-sm transition-all ";
+                              "w-full text-left p-2.5 rounded-lg border text-sm transition-all ";
 
                             if (!isAnswered) {
                               btnClass +=
@@ -446,30 +455,28 @@ export default function App() {
 
                         {isAnswered && (
                           <div
-                            className={`mt-4 p-4 rounded-lg flex gap-3 ${
-                              isCorrect
+                            className={`mt-4 p-3 rounded-lg flex gap-3 ${isCorrect
                                 ? "bg-emerald-900/20 border border-emerald-800/50"
                                 : "bg-red-900/20 border border-red-800/50"
-                            }`}
+                              }`}
                           >
                             <div className="mt-0.5">
                               {isCorrect ? (
-                                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                               ) : (
-                                <XCircle className="w-5 h-5 text-red-500" />
+                                <XCircle className="w-4 h-4 text-red-500" />
                               )}
                             </div>
                             <div>
                               <p
-                                className={`text-sm font-semibold mb-1 ${
-                                  isCorrect
+                                className={`text-xs font-semibold mb-1 ${isCorrect
                                     ? "text-emerald-400"
                                     : "text-red-400"
-                                }`}
+                                  }`}
                               >
                                 {isCorrect ? "Correct!" : "Incorrect"}
                               </p>
-                              <p className="text-sm text-slate-300">
+                              <p className="text-xs text-slate-300">
                                 {q.explanation}
                               </p>
                             </div>
@@ -481,16 +488,16 @@ export default function App() {
                 </div>
 
                 {/* Generate More Questions Button */}
-                <div className="mt-8 pt-6 border-t border-slate-700/50 flex justify-center">
+                <div className="mt-6 pt-5 border-t border-slate-700/50 flex justify-center">
                   <button
                     onClick={() => generateMoreQuestions(targetLanguage)}
                     disabled={isGeneratingMore}
-                    className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/50 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+                    className="flex items-center gap-2 px-3 py-2 bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/50 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
                   >
                     {isGeneratingMore ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3.5 h-3.5" />
                     )}
                     {isGeneratingMore
                       ? "Generating..."

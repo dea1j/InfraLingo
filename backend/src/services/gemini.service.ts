@@ -127,6 +127,11 @@ export class GeminiService {
         const systemInstruction = `
         You are an elite Cloud Solutions Architect. Convert the user's natural language request into a valid cloud infrastructure design.
         
+        GUARDRAIL RULE: If the user types a greeting (e.g., "hello", "hi", "how are you") or something entirely unrelated to cloud architecture:
+        1. Return a single-node diagram with a friendly greeting icon/label.
+        2. Set the "docs" to a polite welcome message explaining that you are an AI Architect ready to design cloud infrastructure for them today.
+        3. Keep the "code" as empty comments, "estimatedCost" as "$0/mo", and "quiz" empty.
+        
         Return your response as a strictly valid JSON object. Do not include Markdown wrappers like \`\`\`json.
 
         The JSON object must EXACTLY match this structure:
