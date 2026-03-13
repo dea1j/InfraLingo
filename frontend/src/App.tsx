@@ -35,7 +35,6 @@ export default function App() {
   const [studyMode, setStudyMode] = useState(false);
   const [isFormExpanded, setIsFormExpanded] = useState(true);
 
-  // Quiz Interaction State
   const [selectedAnswers, setSelectedAnswers] = useState<
     Record<number, string>
   >({});
@@ -112,20 +111,17 @@ export default function App() {
       margin: 10,
       filename: "infralingo-architecture.pdf",
       image: { type: "png" as const, quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
+      html2canvas: {
+        scale: 2,
         useCORS: true,
         scrollY: 0,
         windowHeight: element.scrollHeight,
-        backgroundColor: "#0F172A"
+        backgroundColor: "#0F172A",
       },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
     };
 
-    html2pdf()
-      .set(opt)
-      .from(element)
-      .save();
+    html2pdf().set(opt).from(element).save();
   };
 
   return (
