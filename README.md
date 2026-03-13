@@ -2,7 +2,7 @@
 
 **An Intent-Based Cloud Architect and Multilingual Study Companion.**
 
-![InfraLingo UI Overview](./screenshots/app_walkthrough_1773414950123.webp)
+![InfraLingo UI Overview](./screenshots/main-ui.png)
 
 Building cloud infrastructure is hard; mastering it in a second language is even harder.
 

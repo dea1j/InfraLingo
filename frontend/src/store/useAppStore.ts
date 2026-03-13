@@ -136,7 +136,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      const response = await axios.post('http://localhost:5000/api/generate', 
+      const response = await axios.post('/api/generate', 
         { prompt, targetLanguage, studyMode },
         { headers }
       );
@@ -188,7 +188,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      const response = await axios.post('http://localhost:5000/api/generate/quiz', { 
+      const response = await axios.post('/api/generate/quiz', { 
         code: terraformCode, 
         targetLanguage,
         existingQuestions: quiz.map(q => q.question) 
@@ -222,7 +222,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isTranslating: true, error: null });
 
     try {
-      const response = await axios.post('http://localhost:5000/api/generate/translate', { 
+      const response = await axios.post('/api/generate/translate', { 
         docs: localizedDocs,
         quiz: quiz,
         targetLanguage 
@@ -246,7 +246,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!token) return;
 
     try {
-      const response = await axios.get('http://localhost:5000/api/generate/architectures', {
+      const response = await axios.get('/api/generate/architectures', {
         headers: { Authorization: `Bearer ${token}` }
       });
       set({ history: response.data });
@@ -271,7 +271,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   login: async (email, password) => {
     set({ isAuthenticating: true, authError: null });
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+      const response = await axios.post('/api/auth/login', { email, password });
       const { token, user } = response.data;
       localStorage.setItem('infralingo_token', token);
       localStorage.setItem('infralingo_user', JSON.stringify(user));
@@ -287,7 +287,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   register: async (email, password) => {
     set({ isAuthenticating: true, authError: null });
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/register', { email, password });
+      const response = await axios.post('/api/auth/register', { email, password });
       const { token, user } = response.data;
       localStorage.setItem('infralingo_token', token);
       localStorage.setItem('infralingo_user', JSON.stringify(user));
