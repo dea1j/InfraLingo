@@ -35,6 +35,7 @@ export default function ArchitectureCanvas() {
         onEdgesChange={onEdgesChange}
         fitView
         colorMode="dark"
+        proOptions={{ hideAttribution: true }}
       >
         <Background color="#475569" gap={16} />
         <Controls />

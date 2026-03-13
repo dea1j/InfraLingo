@@ -19,6 +19,7 @@ import {
   ChevronUp,
   ChevronDown,
   Plus,
+  Languages,
 } from "lucide-react";
 import ArchitectureCanvas from "./components/canvas/ArchitectureCanvas";
 import TerraformEditor from "./components/editor/TerraformEditor";
@@ -57,6 +58,8 @@ export default function App() {
     fetchHistory,
     isGeneratingMore,
     generateMoreQuestions,
+    translateExistingDocs,
+    isTranslating,
   } = useAppStore();
 
   useEffect(() => {
@@ -109,20 +112,20 @@ export default function App() {
       margin: 10,
       filename: "infralingo-architecture.pdf",
       image: { type: "png" as const, quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true,
+        scrollY: 0,
+        windowHeight: element.scrollHeight,
+        backgroundColor: "#0F172A"
+      },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
     };
-
-    const originalColor = element.style.color;
-    element.style.color = "black";
 
     html2pdf()
       .set(opt)
       .from(element)
-      .save()
-      .then(() => {
-        element.style.color = originalColor;
-      });
+      .save();
   };
 
   return (
@@ -207,18 +210,65 @@ export default function App() {
                     <label className="text-sm font-medium text-slate-400 mb-1 flex items-center gap-1">
                       <Globe className="w-4 h-4" /> Docs Language
                     </label>
-                    <select
-                      value={targetLanguage}
-                      onChange={(e) => setTargetLanguage(e.target.value)}
-                      className="w-full p-2.5 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="en">English (Default)</option>
-                      <option value="es">Spanish</option>
-                      <option value="fr">French</option>
-                      <option value="de">German</option>
-                      <option value="pt">Portuguese</option>
-                      <option value="ja">Japanese</option>
-                    </select>
+                    <div className="flex gap-2">
+                      <select
+                        value={targetLanguage}
+                        onChange={(e) => setTargetLanguage(e.target.value)}
+                        className="flex-1 p-2.5 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="en">English (Default)</option>
+                        <optgroup label="Europe">
+                          <option value="es">Spanish</option>
+                          <option value="fr">French</option>
+                          <option value="de">German</option>
+                          <option value="it">Italian</option>
+                          <option value="pt">Portuguese</option>
+                          <option value="nl">Dutch</option>
+                          <option value="ru">Russian</option>
+                          <option value="uk">Ukrainian</option>
+                        </optgroup>
+                        <optgroup label="Asia & Middle East">
+                          <option value="ja">Japanese</option>
+                          <option value="zh">Chinese (Simplified)</option>
+                          <option value="ko">Korean</option>
+                          <option value="hi">Hindi</option>
+                          <option value="ar">Arabic</option>
+                          <option value="vi">Vietnamese</option>
+                          <option value="tr">Turkish</option>
+                          <option value="he">Hebrew</option>
+                        </optgroup>
+                        <optgroup label="Africa & Others">
+                          <option value="sw">Swahili</option>
+                          <option value="id">Indonesian</option>
+                        </optgroup>
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!user) {
+                            setIsAuthModalOpen(true);
+                          } else {
+                            translateExistingDocs(targetLanguage);
+                          }
+                        }}
+                        disabled={
+                          isTranslating ||
+                          !localizedDocs ||
+                          localizedDocs.includes(
+                            "Generated docs will appear here"
+                          )
+                        }
+                        className="flex items-center justify-center px-3 bg-purple-600/20 text-purple-400 border border-purple-500/50 rounded-lg hover:bg-purple-600/40 transition-colors disabled:opacity-50"
+                        title="Premium: Translate Docs On-the-Fly"
+                      >
+                        {isTranslating ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Languages className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Study Mode Toggle */}
@@ -323,7 +373,18 @@ export default function App() {
           <div className="flex-1 overflow-y-auto px-6 pb-6 scrollbar-thin scrollbar-thumb-slate-600">
             <div
               id="architecture-docs-content"
-              className="prose prose-invert prose-sm max-w-none text-slate-300"
+              className="prose prose-invert max-w-none 
+                         prose-p:text-slate-300 prose-p:leading-relaxed 
+                         prose-headings:text-indigo-400 prose-headings:font-bold prose-headings:tracking-tight
+                         prose-h1:text-2xl prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:border-b prose-h2:border-slate-700 prose-h2:pb-2
+                         prose-h3:text-lg prose-h3:text-purple-400
+                         prose-strong:text-emerald-400 prose-strong:font-semibold
+                         prose-ul:list-disc prose-ul:pl-5 
+                         prose-ol:list-decimal prose-ol:pl-5 
+                         prose-li:text-slate-300 prose-li:marker:text-purple-500 prose-li:marker:font-bold
+                         prose-code:text-pink-400 prose-code:bg-slate-800/80 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:text-sm prose-code:before:content-none prose-code:after:content-none
+                         prose-pre:bg-[#0F172A] prose-pre:border prose-pre:border-slate-700 prose-pre:shadow-xl
+                         prose-a:text-blue-400 hover:prose-a:text-blue-300 prose-a:transition-colors"
             >
               <ReactMarkdown>{localizedDocs}</ReactMarkdown>
             </div>

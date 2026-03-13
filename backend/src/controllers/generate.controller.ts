@@ -41,3 +41,22 @@ export const generateQuiz = async (req: Request, res: Response) => {
         });
     }
 };
+
+export const translateContent = async (req: Request, res: Response) => {
+    try {
+        const { docs, quiz, targetLanguage } = req.body;
+        
+        if (!docs || !targetLanguage) {
+            return res.status(400).json({ error: "Docs and targetLanguage are required." });
+        }
+
+        const result = await GeminiService.translateExistingContent(docs, quiz, targetLanguage);
+
+        res.status(200).json(result);
+    } catch (error: any) {
+        console.error("Translation Error:", error);
+        res.status(500).json({ 
+            error: error.message || "An unexpected error occurred during translation." 
+        });
+    }
+};

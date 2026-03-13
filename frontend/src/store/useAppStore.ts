@@ -61,6 +61,9 @@ interface AppState {
   generateArchitecture: (prompt: string, targetLanguage: string, studyMode: boolean) => Promise<void>;
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
+
+  isTranslating: boolean;
+  translateExistingDocs: (targetLanguage: string) => Promise<void>;
   
   fetchHistory: () => Promise<void>;
   loadFromHistory: (item: HistoryItem) => void;
@@ -73,7 +76,29 @@ interface AppState {
 
 const savedToken = localStorage.getItem('infralingo_token');
 const savedUser = localStorage.getItem('infralingo_user');
-const savedGuestGenerations = localStorage.getItem('infralingo_guest_count');
+
+const GUEST_DAILY_LIMIT = 3;
+
+const getGuestGenerations = () => {
+  const storedData = localStorage.getItem('infralingo_guest_data');
+  const today = new Date().toDateString();
+
+  if (storedData) {
+    try {
+      const { count, date } = JSON.parse(storedData);
+      if (date !== today) {
+        localStorage.setItem('infralingo_guest_data', JSON.stringify({ count: GUEST_DAILY_LIMIT, date: today }));
+        return GUEST_DAILY_LIMIT;
+      }
+      return count;
+    } catch {
+      console.error("Corrupted local storage data, resetting guest count.");
+    }
+  }
+  
+  localStorage.setItem('infralingo_guest_data', JSON.stringify({ count: GUEST_DAILY_LIMIT, date: today }));
+  return GUEST_DAILY_LIMIT;
+};
 
 export const useAppStore = create<AppState>((set, get) => ({  
   nodes: [],
@@ -91,12 +116,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   token: savedToken || null,
   isAuthenticating: false,
   authError: null,
-  guestGenerations: savedGuestGenerations ? parseInt(savedGuestGenerations) : 3,
+  
+  guestGenerations: getGuestGenerations(),
 
   history: [],
   isHistoryOpen: false,
 
-  // ARCHITECTURE ACTIONS
   generateArchitecture: async (prompt: string, targetLanguage: string, studyMode: boolean) => {
     const { token, guestGenerations, user } = get();
 
@@ -121,7 +146,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       if (!user) {
         const newCount = guestGenerations - 1;
-        localStorage.setItem('infralingo_guest_count', newCount.toString());
+        const today = new Date().toDateString();
+        localStorage.setItem('infralingo_guest_data', JSON.stringify({ count: newCount, date: today }));
         set({ guestGenerations: newCount });
       }
 
@@ -180,7 +206,38 @@ export const useAppStore = create<AppState>((set, get) => ({
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
 
-  // HISTORY ACTIONS
+  isTranslating: false,
+
+  translateExistingDocs: async (targetLanguage: string) => {
+    const { localizedDocs, quiz, token, user } = get();
+
+    if (!user) {
+      set({ error: "Premium feature: Please sign in to translate on the fly." });
+      return;
+    }
+
+    if (!localizedDocs || localizedDocs.includes('Generated docs will appear here')) return;
+
+    set({ isTranslating: true, error: null });
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/generate/translate', { 
+        docs: localizedDocs,
+        quiz: quiz,
+        targetLanguage 
+      }, { headers: { Authorization: `Bearer ${token}` } });
+
+      set({ 
+        localizedDocs: response.data.localizedDocs,
+        quiz: response.data.quiz || [],
+        isTranslating: false 
+      });
+    } catch (error) {
+      console.error("Translation API Error:", error);
+      set({ error: "Failed to translate docs. Try again.", isTranslating: false });
+    }
+  },
+
   setIsHistoryOpen: (isOpen) => set({ isHistoryOpen: isOpen }),
 
   fetchHistory: async () => {
@@ -210,7 +267,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
   },
 
-  // AUTH ACTIONS
   login: async (email, password) => {
     set({ isAuthenticating: true, authError: null });
     try {

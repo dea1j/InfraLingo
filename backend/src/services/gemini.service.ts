@@ -1,24 +1,117 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { LingoDotDevEngine } from "lingo.dev/sdk";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
+const MASTER_LOCALE_MAP: Record<string, string> = {
+    ja: 'Japanese', zh: 'Simplified Chinese', ko: 'Korean', es: 'Spanish', fr: 'French',
+    de: 'German', ar: 'Arabic', fa: 'Persian', vi: 'Vietnamese', tr: 'Turkish',
+    pt: 'Portuguese', ru: 'Russian', hi: 'Hindi', id: 'Indonesian', th: 'Thai',
+    en: 'English', it: 'Italian', nl: 'Dutch', pl: 'Polish', sv: 'Swedish',
+    uk: 'Ukrainian', cs: 'Czech', ro: 'Romanian', hu: 'Hungarian', el: 'Greek',
+    he: 'Hebrew', bn: 'Bengali', mr: 'Marathi', ta: 'Tamil', te: 'Telugu',
+    kn: 'Kannada', gu: 'Gujarati', pa: 'Punjabi', ur: 'Urdu', ms: 'Malay',
+    tl: 'Tagalog', sw: 'Swahili'
+};
+
+const LINGO_TIMEOUT_MS = 30000;
+
+async function withRetry<T>(operation: () => Promise<T>, maxRetries = 3): Promise<T> {
+    let lastError: any;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            return await operation();
+        } catch (error: any) {
+            lastError = error;
+            if (error?.status === 429) {
+                console.warn(`[Gemini] Rate limited (429). Attempt ${attempt}/${maxRetries}. Retrying in ${attempt * 15}s...`);
+                await new Promise(resolve => setTimeout(resolve, attempt * 15000));
+                continue;
+            }
+            throw error;
+        }
+    }
+    console.error(`[Gemini] Failed after ${maxRetries} rate limit retries.`);
+    throw lastError;
+}
+
+async function translateDocsWithFallback(
+    docs: string,
+    targetLanguage: string,
+    languageName: string
+): Promise<string> {
+    try {
+        const lingoDotDev = new LingoDotDevEngine({
+            apiKey: process.env.LINGO_API_KEY || ""
+        });
+
+        const timeoutPromise = new Promise<null>((_, reject) =>
+            setTimeout(() => reject(new Error("Lingo timeout")), LINGO_TIMEOUT_MS)
+        );
+
+        const translationPromise = lingoDotDev.localizeObject({ data: docs }, {
+            sourceLocale: "en",
+            targetLocale: targetLanguage
+        });
+
+        const result = await Promise.race([translationPromise, timeoutPromise]) as any;
+        if (result && result.data) return result.data;
+    } catch (err) {
+        console.error("Lingo docs translation failed or timed out:", err);
+    }
+
+    return docs;
+}
+
+async function translateQuiz(
+    quiz: any[],
+    targetLanguage: string,
+    languageName: string
+): Promise<any[]> {
+    if (!quiz || quiz.length === 0) return [];
+
+    try {
+        const lingoDotDev = new LingoDotDevEngine({
+            apiKey: process.env.LINGO_API_KEY || ""
+        });
+
+        const timeoutPromise = new Promise<any>((_, reject) =>
+            setTimeout(() => reject(new Error("Lingo timeout")), LINGO_TIMEOUT_MS)
+        );
+
+        const translationPromise = lingoDotDev.localizeObject({ data: quiz }, {
+            sourceLocale: "en",
+            targetLocale: targetLanguage
+        });
+
+        const result = await Promise.race([translationPromise, timeoutPromise]);
+        if (result && result.data) return result.data;
+    } catch (e) {
+        console.error("Lingo quiz translation error:", e);
+    }
+    
+    return quiz;
+}
+
 export class GeminiService {
-    static async generateInfrastructure(prompt: string, targetLanguage: string, isPremium: boolean, studyMode: boolean) {
-        const model = genAI.getGenerativeModel({ 
+    static async generateInfrastructure(
+        prompt: string,
+        targetLanguage: string,
+        isPremium: boolean,
+        studyMode: boolean
+    ) {
+        const model = genAI.getGenerativeModel({
             model: "gemini-2.5-flash",
             generationConfig: {
                 responseMimeType: "application/json",
             }
         });
 
-        const languageMap: Record<string, string> = {
-            en: "English", es: "Spanish", fr: "French", de: "German", pt: "Portuguese", ja: "Japanese"
-        };
-        const languageName = languageMap[targetLanguage] || "English";
+        const languageName = MASTER_LOCALE_MAP[targetLanguage] || "English";
 
-        const docsInstruction = studyMode 
-            ? `"docs": "A detailed Study Guide explaining the architecture. CRITICAL: You MUST use proper Markdown spacing (e.g., '## Title' not '##Title') so it translates correctly. Break down core concepts."`
-            : `"docs": "A SHORT, basic summary. CRITICAL: You MUST use proper Markdown spacing (e.g., '## Overview'). DO NOT write a study guide. DO NOT write deep explanations. Keep it extremely brief."`;
+        const docsInstruction = studyMode
+            ? `"docs": "A concise Study Guide explaining the architecture (MAX 600 WORDS). CRITICAL RULES: 1. You MUST use strict Markdown formatting (e.g., '## Headers', '* Bullet points'). 2. You MUST use '\\n\\n' to create line breaks and spacing between sections. 3. Keep explanations structured, punchy, and easy to read."`
+            : `"docs": "A SHORT, basic summary. CRITICAL: You MUST use proper Markdown spacing (e.g., '## Overview'). Use '\\n\\n' for line breaks. DO NOT write a study guide. Keep it extremely brief."`;
 
         const quizInstruction = studyMode
             ? `"quiz": [ 
@@ -30,7 +123,7 @@ export class GeminiService {
                 } 
               ] (CRITICAL RULES: 1. Generate EXACTLY 3 unique questions. 2. ALL TEXT MUST BE IN ${languageName.toUpperCase()}. 3. The 'correctAnswer' MUST be the exact full string from the options array, DO NOT use a letter like 'A' or 'B'.)`
             : `"quiz": [] (CRITICAL: YOU MUST RETURN AN EMPTY ARRAY. DO NOT GENERATE ANY QUESTIONS. STUDY MODE IS DISABLED.)`;
-            
+
         const systemInstruction = `
         You are an elite Cloud Solutions Architect. Convert the user's natural language request into a valid cloud infrastructure design.
         
@@ -60,30 +153,53 @@ export class GeminiService {
         `;
 
         try {
-            const result = await model.generateContent(`${systemInstruction}\n\nUser Request: ${prompt}`);
-            const responseText = result.response.text();
-            
-            const cleanJsonString = responseText.replace(/^```json\n?/g, "").replace(/\n?```$/g, "").trim();
-            
-            return JSON.parse(cleanJsonString);
+            const rawResponseText = await withRetry(async () => {
+                const result = await model.generateContent(`${systemInstruction}\n\nUser Request: ${prompt}`);
+                return result.response.text();
+            });
+
+            const cleanJsonString = rawResponseText
+                .replace(/^```json\n?/g, "")
+                .replace(/\n?```$/g, "")
+                .trim();
+
+            let parsedData = JSON.parse(cleanJsonString);
+
+            if (targetLanguage !== "en" && parsedData.docs) {
+                const [translatedDocs, translatedQuiz] = await Promise.all([
+                    translateDocsWithFallback(parsedData.docs, targetLanguage, languageName),
+                    parsedData.quiz && parsedData.quiz.length > 0
+                        ? translateQuiz(parsedData.quiz, targetLanguage, languageName)
+                        : Promise.resolve(parsedData.quiz ?? [])
+                ]);
+
+                parsedData.docs = translatedDocs;
+                parsedData.quiz = translatedQuiz;
+            }
+
+            return parsedData;
+
         } catch (error) {
             console.error("Gemini Generation Error:", error);
-            throw new Error("Failed to generate infrastructure from AI. Please try rephrasing your request.");
+            throw new Error(
+                "Failed to generate infrastructure from AI. Please try rephrasing your request."
+            );
         }
     }
 
-    static async generateMoreQuestions(code: string, targetLanguage: string, existingQuestions: string[]) {
-        const model = genAI.getGenerativeModel({ 
+    static async generateMoreQuestions(
+        code: string,
+        targetLanguage: string,
+        existingQuestions: string[]
+    ) {
+        const model = genAI.getGenerativeModel({
             model: "gemini-2.5-flash",
             generationConfig: {
                 responseMimeType: "application/json",
             }
         });
 
-        const languageMap: Record<string, string> = {
-            en: "English", es: "Spanish", fr: "French", de: "German", pt: "Portuguese", ja: "Japanese"
-        };
-        const languageName = languageMap[targetLanguage] || "English";
+        const languageName = MASTER_LOCALE_MAP[targetLanguage] || "English";
 
         const systemInstruction = `
         You are an elite Cloud Solutions Architect and Technical Trainer. 
@@ -116,15 +232,34 @@ export class GeminiService {
         `;
 
         try {
-            const result = await model.generateContent(`${systemInstruction}\n\n${prompt}`);
-            const responseText = result.response.text();
-            
-            const cleanJsonString = responseText.replace(/^```json\n?/g, "").replace(/\n?```$/g, "").trim();
-            
+            const rawResponseText = await withRetry(async () => {
+                const result = await model.generateContent(`${systemInstruction}\n\n${prompt}`);
+                return result.response.text();
+            });
+            const cleanJsonString = rawResponseText
+                .replace(/^```json\n?/g, "")
+                .replace(/\n?```$/g, "")
+                .trim();
+
             return JSON.parse(cleanJsonString);
         } catch (error) {
             console.error("Gemini Quiz Generation Error:", error);
             throw new Error("Failed to generate additional questions.");
         }
+    }
+
+    static async translateExistingContent(
+        docs: string,
+        quiz: any[],
+        targetLanguage: string
+    ) {
+        const languageName = MASTER_LOCALE_MAP[targetLanguage] || "English";
+
+        const [localizedDocs, translatedQuiz] = await Promise.all([
+            translateDocsWithFallback(docs, targetLanguage, languageName),
+            translateQuiz(quiz, targetLanguage, languageName)
+        ]);
+
+        return { localizedDocs, quiz: translatedQuiz };
     }
 }

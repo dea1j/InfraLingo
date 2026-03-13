@@ -8,7 +8,7 @@ export class ArchitectureService {
 
     static async buildAndLocalize(prompt: string, targetLanguage: string, userId: string | null, studyMode: boolean) {
         const isPremium = userId !== null;
-        
+
         if (!isPremium) {
             const lowerPrompt = prompt.toLowerCase();
             const blockedKeywords = ["gcp", "google cloud", "azure", "kubernetes", "k8s"];
@@ -18,7 +18,7 @@ export class ArchitectureService {
         }
 
         console.log(`Calling Gemini (Premium: ${isPremium}, Study Mode: ${studyMode}) for: "${prompt}"`);
-        
+
         const geminiResult = await GeminiService.generateInfrastructure(prompt, targetLanguage, isPremium, studyMode);
 
         console.log(`Translating documentation to: ${targetLanguage}`);
@@ -33,13 +33,13 @@ export class ArchitectureService {
                 edgesJson: geminiResult.edges,
                 terraformCode: geminiResult.code,
                 readmeLocalized: localizedDocs,
-                user: { id: userId } 
+                user: { id: userId }
             });
             await this.architectureRepo.save(newArchitecture);
         }
 
         console.log(`Generation complete!`);
-        
+
         return {
             nodes: geminiResult.nodes,
             edges: geminiResult.edges,
