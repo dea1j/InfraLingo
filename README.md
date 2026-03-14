@@ -49,7 +49,10 @@ Most infrastructure generators stop at the code. InfraLingo transforms into a pe
 ### 1. Project History & Workspace
 
 Easily jump back into past architectural designs. Your visual nodes and Terraform code are saved securely to your dashboard.
-![Architecture History](./screenshots/history-sidebar.png) ### 2. Seamless Upgrades
+![Architecture History](./screenshots/history-sidebar.png)
+
+### 2. Seamless Upgrades
+
 A clean, frictionless authentication layer designed to transition guest users into authenticated power users.
 ![Authentication Modal](./screenshots/auth-modal.png) ---
 
@@ -120,4 +123,5 @@ A clean, frictionless authentication layer designed to transition guest users in
 
 - **Multi-File Export:** Download complete **.zip** files containing **main.tf**, **variables.tf**, and **outputs.tf**.
 - **Reverse Engineering:** Upload an existing **main.tf** file and have InfraLingo draw the canvas and generate a quiz on your own code.
+- **Save limit for unauthenticated users in db:** Stop saving free tier for guest users in localstorage.
 - **Cloud Integrations:** Direct deployment hooks to AWS, GCP, and Azure.
