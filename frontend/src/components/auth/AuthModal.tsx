@@ -30,7 +30,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   };
 
   const handleGithubLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/github";
+    window.location.href = "/api/auth/github";
   };
 
   return (
@@ -157,8 +157,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               {isAuthenticating
                 ? "Processing..."
                 : isLogin
-                ? "Sign In with Email"
-                : "Create Account"}
+                  ? "Sign In with Email"
+                  : "Create Account"}
             </button>
           </form>
 
